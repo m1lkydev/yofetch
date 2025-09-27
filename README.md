@@ -35,4 +35,5 @@ information about the API configuration can be found [here](LuaConfigInfo.md)
 
 # contributing
 pull requests are welcome - please keep speed and minimalism in mind
+
 report issues [here](https://github.com/TheMomer/yofetch/issues)
