@@ -1,24 +1,14 @@
 local yo = require("Yofetch")
-local separator = "{style.reset} - "
-local accent = "{style.reset}{style.bold}{color.cyan}"
+local separator = "{style.reset}: "
+local accent = "{style.reset}{style.bold}{color.red}"
 
---yo.logo([[
---{color.cyan}      /\{style.reset}
---{color.cyan}     /  \{style.reset}
---{color.cyan}    /\   \{style.reset}
---{color.cyan}   /      \{style.reset}
---{color.cyan}  /   __   \{style.reset}
---{color.cyan} /   |  |  -\{style.reset}
---{color.cyan}/_-''    ''-_\{style.reset}
---
---]])
 yo.padding(
     3,  -- Padding Right
     0,  -- Padding Left
     1   -- Padding Top
 )
 yo.mode("default")
--- yo.shell({"/bin/sh", "-c"})
+yo.shell({"/bin/bash", "-c"})
 
 local function parse_flag_value(input, flag)
     local pattern_with_value = "%-" .. flag .. "='(.-)'"
@@ -128,15 +118,26 @@ local gpu = yo.exec([==[
     gpu=$(lspci | grep -i -E 'vga|3d|display' | cut -d ':' -f3- | sed 's/^ //')
 
     brand=""
+    model=""
+
     if [[ "$gpu" =~ AMD.*ATI ]]; then
         brand="AMD ATI"
+        model=$(echo "$gpu" | grep -oP 'Radeon.*' | head -n1 | tr -d '[]')
     elif [[ "$gpu" =~ AMD ]]; then
         brand="AMD"
+        model=$(echo "$gpu" | grep -oP 'Radeon.*' | head -n1 | tr -d '[]')
     elif [[ "$gpu" =~ ATI ]]; then
         brand="ATI"
+        model=$(echo "$gpu" | grep -oP 'Radeon.*' | head -n1 | tr -d '[]')
+    elif [[ "$gpu" =~ NVIDIA ]]; then
+        brand="NVIDIA"
+        model=$(echo "$gpu" | grep -oP 'NVIDIA.*' | head -n1 | tr -d '[]')
+    elif [[ "$gpu" =~ Intel ]]; then
+        brand="Intel"
+        # Убираем повтор “Intel” и слово “Corporation”, оставляем только название GPU
+        model=$(echo "$gpu" | sed -E 's/Intel( Corporation)? //' | head -n1 | tr -d '[]')
     fi
 
-    model=$(echo "$gpu" | grep -oP 'Radeon.*' | head -n1 | tr -d '[]')
     echo "$brand $model"
 ]==])
 local cpu = yo.exec([==[
@@ -163,33 +164,63 @@ local cpu = yo.exec([==[
     cpu="${cpu//Core2/Core 2}"
     echo $cpu
 ]==])
+local pkgs = yo.exec([==[
+    out=""
+    check() {
+        [ "$1" -gt 0 ] && out+="${1} ($2), "
+    }
+
+    if command -v pacman &>/dev/null; then
+        check "$(pacman -Qq | wc -l)" "pacman"
+    fi
+
+    if command -v dpkg-query &>/dev/null; then
+        check "$(dpkg-query -f '.\n' -W | wc -l)" "apt"
+    fi
+
+    if command -v rpm &>/dev/null; then
+        check "$(rpm -qa | wc -l)" "rpm"
+    fi
+
+    if command -v snap &>/dev/null; then
+        check "$(snap list | tail -n +2 | wc -l)" "snap"
+    fi
+
+    if command -v flatpak &>/dev/null; then
+        check "$(flatpak list | wc -l)" "flatpak"
+    fi
+
+    out=${out%, }
+    echo "$out"
+]==])
 
 local user_info = yo.exec("echo $(whoami)@$(uname -n)")
 
-yo.print("{color.cyan}" .. user_info)
-yo.print(accent .. string.rep("-", #user_info))
+yo.print("{color.red}" .. user_info)
+yo.print(string.rep("-", #user_info))
 
-yo.print(accent .. "OS"         .. separator .. yo.exec(". /etc/os-release; echo $PRETTY_NAME"))
-yo.print(accent .. "Kernel"     .. separator .. yo.exec("echo $(uname -r) $(uname -m)"))
-yo.print(accent .. "Bday"       .. separator .. birthday)
+yo.print(accent .. "os"         .. separator .. yo.exec(". /etc/os-release; echo $PRETTY_NAME"))
+yo.print(accent .. "kernel"     .. separator .. yo.exec("echo $(uname -r) $(uname -m)"))
+yo.print(accent .. "pkgs"       .. separator .. pkgs)
+yo.print(accent .. "bday"       .. separator .. birthday)
 if de ~= "nah" then
-    yo.print(accent .. "DE"     .. separator .. de)
+    yo.print(accent .. "de"     .. separator .. de)
 end
-yo.print(accent .. "WM"         .. separator .. wm)
-yo.print(accent .. "DM"         .. separator .. dm)
-yo.print(accent .. "Shell"      .. separator .. shell)
-yo.print(accent .. "Uptime"     .. separator .. yo.exec("echo $(uptime -p | sed 's/^up //')"))
-yo.print(accent .. "CPU"        .. separator .. cpu)
-yo.print(accent .. "GPU"        .. separator .. gpu)
-yo.print(accent .. "Mem"        .. separator .. yo.exec([[free -k | awk '/Mem:/ {printf "%.1f GiB / %.1f GiB\n", $3/1048576, $2/1048576}']]))
-yo.print(accent .. "Term"       .. separator .. yo.exec("ps -o comm= -p $(ps -o ppid= -p $(ps -o ppid= -p $(ps -o ppid= -p $$))) | sed 's/^-//'"))
+yo.print(accent .. "wm"         .. separator .. wm)
+yo.print(accent .. "dm"         .. separator .. dm)
+yo.print(accent .. "shell"      .. separator .. shell)
+yo.print(accent .. "uptime"     .. separator .. yo.exec("echo $(uptime -p | sed 's/^up //')"))
+yo.print(accent .. "cpu"        .. separator .. cpu)
+yo.print(accent .. "gpu"        .. separator .. gpu)
+yo.print(accent .. "mem"        .. separator .. yo.exec([[free -k | awk '/Mem:/ {printf "%.1f GiB / %.1f GiB\n", $3/1048576, $2/1048576}']]))
+yo.print(accent .. "term"       .. separator .. yo.exec("ps -o comm= -p $(ps -o ppid= -p $(ps -o ppid= -p $(ps -o ppid= -p $$))) | sed 's/^-//'"))
 
 local w_flag_value = parse_flag_value(yo.config_args, "w")
 if type(w_flag_value) == "table" then
-    yo.print(accent .. "Weather".. separator .. weather_get(w_flag_value[1], w_flag_value[2]))
+    yo.print(accent .. "weather".. separator .. weather_get(w_flag_value[1], w_flag_value[2]))
 end
 
-yo.print(accent .. "Locale"     .. separator .. yo.exec("echo $LANG"))
+yo.print(accent .. "locale"     .. separator .. yo.exec("echo $LANG"))
 yo.print("")
 yo.print(
     "{color.black}███{color.red}███{color.green}███{color.yellow}███{color.blue}███{color.magenta}███{color.cyan}███{color.white}███{style.reset}\n"..
