@@ -1,5 +1,5 @@
 // Copyright (c) 2025 TheMomer.
-// Licensed under the MIT License.
+// Licensed under the WTFPL License.
 // Contributors: AnmiTaliDev - security improvements
 
 package main
