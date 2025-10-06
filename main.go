@@ -24,9 +24,6 @@ import (
 // Setting the constants
 const (
 	Version string = "v0.2.1-alpha"
-
-	//License = "MIT"
-	//Creator = "TheMomer"
 )
 
 // Config structure
