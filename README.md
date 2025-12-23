@@ -1,9 +1,9 @@
 # yofetch
 yofetch is a fast, minimal system fetch tool written in go
 
-![yofetch](screenshot2.png)
+[![yofetch with my config](screenshot2.png)](configs/example_config_linux_glibc.lua)
 
-[![yofetch with my config](screenshot.png)](configs/example_config_linux_glibc.lua)
+![yofetch](screenshot.png)
 
 ![license](https://img.shields.io/github/license/TheMomer/yofetch?style=for-the-badge)
 [![latest version](https://img.shields.io/github/v/release/TheMomer/yofetch?display_name=release&include_prereleases&style=for-the-badge&label=Latest%20version)](https://github.com/TheMomer/yofetch/releases/latest)
